@@ -7,12 +7,14 @@
 #include "MCP3204.hpp"
 #include "Filter.hpp"
 
+// 震度を計算する頻度(1 ~ 100/秒)
+const int CALC_INTENSITY_RATE = 10;
+// 加速度を出力する頻度(0 ~ 100/秒)
+const int ACC_REPORT_RATE = 100;
+
 Led LED = Led();
 MCP3204 ADC = MCP3204(SPISettings(115200, MSBFIRST, SPI_MODE0), D21);
 auto ADJUST_PIN = D16;
-
-const int CALC_INTENSITY_RATE = 1;
-const int ACC_REPORT_RATE = 5;
 
 const int samplingRate = 100;
 const int bufferSize = samplingRate;
@@ -23,7 +25,7 @@ void setup()
 {
     pinMode(ADJUST_PIN, INPUT_PULLDOWN);
 
-    Serial.begin(1200);
+    Serial.begin(115200);
 
     // TODO: これクラスの中に持っていったほうが良さそう
     SPI.setRX(D20);
@@ -59,6 +61,7 @@ void printNmea(const char *format, ...)
     if (buffer != temp) {
         delete[] buffer;
     }
+    Serial.flush();
 }
 
 // オフセットを計算する
@@ -123,7 +126,7 @@ void loop()
     // オフセットの計算がされていない場合オフセットを計算する
     if (!isOffsetted)
         calcOffset(rawData, offset);
-    else if (frame % (samplingRate / ACC_REPORT_RATE) == 0)
+    else if (ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
         printNmea("XSACC,%.3f,%.3f,%.3f,", (x - offset[0]) / 1024.0 * 980, (y - offset[1]) / 1024.0 * 980, (z - offset[2]) / 1024.0 * 980);
 
     // オフセットを加味した値をセット
