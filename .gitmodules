@@ -1,0 +1,3 @@
+[submodule "lib/ArduinoSort"]
+	path = lib/ArduinoSort
+	url = https://github.com/emilv/ArduinoSort.git
