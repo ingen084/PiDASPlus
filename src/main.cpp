@@ -127,7 +127,7 @@ void loop()
     if (!isOffsetted)
         calcOffset(rawData, offset);
     else if (ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
-        printNmea("XSACC,%.3f,%.3f,%.3f,", (x - offset[0]) / 1024.0 * 980, (y - offset[1]) / 1024.0 * 980, (z - offset[2]) / 1024.0 * 980);
+        printNmea("XSACC,%.3f,%.3f,%.3f", (x - offset[0]) / 1024.0 * 980, (y - offset[1]) / 1024.0 * 980, (z - offset[2]) / 1024.0 * 980);
 
     // オフセットを加味した値をセット
     offsettedData[index * 3 + 0] = x - offset[0];
