@@ -13,3 +13,18 @@ The Filter.hpp in PiDASPlus repository use a patent
 (特許5946067 https://plidb.inpit.go.jp/pldb/html/HTML.L/2016/001/L2016001200.html).
 If you use in commercial, you must get patent license from "National Research
 Institute for Earth Science and Disaster Resilience".
+
+  =========================================================================
+  ==  NOTICE file corresponding to the section 4 d of                    ==
+  ==  the Apache License, Version 2.0,                                   ==
+  ==  in this case for PiDAS.                                            ==
+  =========================================================================
+
+PiDAS
+Copyright 2021-2022 Kiji no Shippo.
+This product includes software developed at Kiji no Shippo.
+
+The filter.py in PiDAS repository use a patent
+(特許5946067 https://plidb.inpit.go.jp/pldb/html/HTML.L/2016/001/L2016001200.html).
+If you use in commercial, you must get patent license from "National Research
+Institute for Earth Science and Disaster Resilience".
