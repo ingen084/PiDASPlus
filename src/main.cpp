@@ -64,8 +64,14 @@ void printNmea(const char *format, ...)
     Serial.flush();
 }
 
+// 3-axis adjust value
+float offset[3];
+// Adujusting time( offset_counter / sampling rate = sec)
+int offsetCounter = bufferSize * 5;
+bool isOffsetted = false;
+
 // オフセットを計算する
-void calcOffset(int *buf, int *off)
+void calcOffset(int *buf)
 {
     float x = 0, y = 0, z = 0;
     for (int i = 0; i < bufferSize; i++)
@@ -74,9 +80,9 @@ void calcOffset(int *buf, int *off)
         y += buf[i * 3 + 1];
         z += buf[i * 3 + 2];
     }
-    off[0] = (int)(x / bufferSize);
-    off[1] = (int)(y / bufferSize);
-    off[2] = (int)(z / bufferSize);
+    offset[0] = x / bufferSize;
+    offset[1] = y / bufferSize;
+    offset[2] = z / bufferSize;
 }
 
 const int RETENTION_MICRO_SECONDS = 60 * 10 * 1000000;
@@ -84,16 +90,10 @@ int x = 0, y = 0, z = 0;
 
 // TODO: ここらへんの変数を整理する必要がある
 int rawData[bufferSize * 3];
-int offsettedData[bufferSize * 3];
+float offsettedData[bufferSize * 3];
 float filteredData[bufferSize * 3];
 float compositeData[bufferSize];
 float compositeSortedData[bufferSize];
-
-// 3-axis adjust value
-int offset[3];
-// Adujusting time( offset_counter / sampling rate = sec)
-int offsetCounter = bufferSize * 5;
-bool isOffsetted = false;
 
 unsigned long frame = 0;
 
@@ -112,11 +112,11 @@ void loop()
 
     // 極値を弾く
     if (x < 0 || x > 4096 || x == 1024 || x == 2048 || x == 3072)
-        x = offset[0];
+        x = (uint16_t)offset[0];
     if (y < 0 || y > 4096 || y == 1024 || y == 2048 || y == 3072)
-        y = offset[1];
+        y = (uint16_t)offset[1];
     if (z < 0 || z > 4096 || z == 1024 || z == 2048 || z == 3072)
-        z = offset[2];
+        z = (uint16_t)offset[2];
 
     // 計測した値を取得
     rawData[index * 3 + 0] = x;
@@ -125,9 +125,9 @@ void loop()
 
     // オフセットの計算がされていない場合オフセットを計算する
     if (!isOffsetted)
-        calcOffset(rawData, offset);
-    else if (ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
-        printNmea("XSACC,%.3f,%.3f,%.3f", (x - offset[0]) / 1024.0 * 980, (y - offset[1]) / 1024.0 * 980, (z - offset[2]) / 1024.0 * 980);
+        calcOffset(rawData);
+    // else if (ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
+    //     printNmea("XSACC,%.3f,%.3f,%.3f", (x - offset[0]) / 1024.0f * 980, (y - offset[1]) / 1024.0f * 980, (z - offset[2]) / 1024.0f * 980);
 
     // オフセットを加味した値をセット
     offsettedData[index * 3 + 0] = x - offset[0];
@@ -142,11 +142,14 @@ void loop()
         {
             auto lIndex = (frame - 5 + i + 1) % bufferSize;
             // G to Gal.
-            offsettedDataset[i] = offsettedData[lIndex * 3 + a] / 1024.0 * 980;
+            offsettedDataset[i] = offsettedData[lIndex * 3 + a] / 1024.0f * 980;
         }
         filteredData[index * 3 + a] = FILTER.execFilterAndPop(offsettedDataset, 5);
     }
 
+    if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
+        printNmea("XSACC,%.3f,%.3f,%.3f", filteredData[index * 3], filteredData[index * 3 + 1], filteredData[index * 3 + 2]);
+    
     // 3軸合成
     compositeData[index] = sqrt(
         filteredData[index * 3 + 0] * filteredData[index * 3 + 0] +
