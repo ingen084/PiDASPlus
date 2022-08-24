@@ -1,13 +1,6 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-enum AdcChannel
-{
-    X = 0,
-    Y = 1,
-    Z = 2,
-};
-
 class MCP3204
 {
 public:
@@ -19,7 +12,7 @@ public:
         digitalWrite(csPin, HIGH);
     }
 
-    uint16_t read(AdcChannel ch)
+    uint16_t read(uint8_t ch)
     {
         union
         {
