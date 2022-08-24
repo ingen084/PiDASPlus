@@ -71,7 +71,7 @@ int offsetCounter = bufferSize * 5;
 bool isOffsetted = false;
 
 // オフセットを計算する
-void calcOffset(int *buf)
+void calcOffset(uint16_t *buf)
 {
     float x = 0, y = 0, z = 0;
     for (int i = 0; i < bufferSize; i++)
@@ -89,7 +89,7 @@ const int RETENTION_MICRO_SECONDS = 60 * 10 * 1000000;
 int x = 0, y = 0, z = 0;
 
 // TODO: ここらへんの変数を整理する必要がある
-int rawData[bufferSize * 3];
+uint16_t rawData[bufferSize * 3];
 float offsettedData[bufferSize * 3];
 float filteredData[bufferSize * 3];
 float compositeData[bufferSize];
@@ -105,47 +105,37 @@ void loop()
 {
     auto startTime = micros();
 
-    auto index = frame % bufferSize;
-
-    // 値を拾ってくる
-    uint16_t x = ADC.read(AdcChannel::X), y = ADC.read(AdcChannel::Y), z = ADC.read(AdcChannel::Z);
-
-    // 極値を弾く
-    if (x < 0 || x > 4096 || x == 1024 || x == 2048 || x == 3072)
-        x = (uint16_t)offset[0];
-    if (y < 0 || y > 4096 || y == 1024 || y == 2048 || y == 3072)
-        y = (uint16_t)offset[1];
-    if (z < 0 || z > 4096 || z == 1024 || z == 2048 || z == 3072)
-        z = (uint16_t)offset[2];
+    uint16_t index = frame % bufferSize;
 
     // 計測した値を取得
-    rawData[index * 3 + 0] = x;
-    rawData[index * 3 + 1] = y;
-    rawData[index * 3 + 2] = z;
+    for (auto a = 0; a < 3; a++) {
+        // 値を拾ってくる
+        uint16_t v = ADC.read(a);
 
-    // オフセットの計算がされていない場合オフセットを計算する
-    if (!isOffsetted)
-        calcOffset(rawData);
-    // else if (ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
-    //     printNmea("XSACC,%.3f,%.3f,%.3f", (x - offset[0]) / 1024.0f * 980, (y - offset[1]) / 1024.0f * 980, (z - offset[2]) / 1024.0f * 980);
+        // 極値を弾く
+        if (v < 0 || v > 4096 || v == 1024 || v == 2048 || v == 3072)
+            v = (uint16_t)offset[a];
+        
+        auto localIndex = index * 3 + a;
+        rawData[localIndex] = v;
 
-    // オフセットを加味した値をセット
-    offsettedData[index * 3 + 0] = x - offset[0];
-    offsettedData[index * 3 + 1] = y - offset[1];
-    offsettedData[index * 3 + 2] = z - offset[2];
+        // オフセット適用
+        offsettedData[localIndex] = v - offset[a];
 
-    // 直近の５フレーム分をフィルタに掛ける(3軸分)
-    for (int a = 0; a < 3; a++)
-    {
+        // 直近の５フレーム分をフィルタに掛ける
         float offsettedDataset[5];
         for (int i = 0; i < 5; i++)
         {
-            auto lIndex = (frame - 5 + i + 1) % bufferSize;
+            auto fIndex = (frame - 5 + i + 1) % bufferSize;
             // G to Gal.
-            offsettedDataset[i] = offsettedData[lIndex * 3 + a] / 1024.0f * 980;
+            offsettedDataset[i] = offsettedData[fIndex * 3 + a] / 1024.0f * 980;
         }
-        filteredData[index * 3 + a] = FILTER.execFilterAndPop(offsettedDataset, 5);
+        filteredData[localIndex] = FILTER.execFilterAndPop(offsettedDataset, 5);
     }
+
+    // オフセット計算
+    if (!isOffsetted)
+        calcOffset(rawData);
 
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
         printNmea("XSACC,%.3f,%.3f,%.3f", filteredData[index * 3], filteredData[index * 3 + 1], filteredData[index * 3 + 2]);
@@ -160,7 +150,7 @@ void loop()
     {
         memcpy(compositeSortedData, compositeData, sizeof(compositeData[0]) * bufferSize);
         sortArray(compositeSortedData, bufferSize);
-        auto gal = compositeSortedData[-int(samplingRate * 0.3)];
+        auto gal = compositeSortedData[(int)(samplingRate * 0.7)];
         if (gal > 0)
         {
             auto rawInt = round((2.0f * log10(gal) + 0.94f) * 10.0f) / 10.0f;
@@ -218,7 +208,7 @@ void loop()
     if (digitalRead(ADJUST_PIN) && isOffsetted)
     {
         isOffsetted = false;
-        offsetCounter = bufferSize * 5;
+        offsetCounter = samplingRate * 5;
         latestMaxTime = micros();
         maxIntensity = JMA_INT_0;
         printNmea("XSOFF,1");
