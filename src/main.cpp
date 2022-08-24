@@ -17,7 +17,8 @@ MCP3204 ADC = MCP3204(SPISettings(115200, MSBFIRST, SPI_MODE0), D21);
 auto ADJUST_PIN = D16;
 
 const int samplingRate = 100;
-const int bufferSize = samplingRate;
+const int bufferSize = samplingRate * 1;
+const int rawBufferSize = samplingRate * 10;
 
 Filter FILTER = Filter(samplingRate);
 
@@ -64,36 +65,22 @@ void printNmea(const char *format, ...)
     Serial.flush();
 }
 
+uint32_t sum[3];
 // 3-axis adjust value
 float offset[3];
 // Adujusting time( offset_counter / sampling rate = sec)
-int offsetCounter = bufferSize * 5;
+uint16_t offsetCounter = samplingRate * 6;
 bool isOffsetted = false;
-
-// オフセットを計算する
-void calcOffset(uint16_t *buf)
-{
-    float x = 0, y = 0, z = 0;
-    for (int i = 0; i < bufferSize; i++)
-    {
-        x += buf[i * 3 + 0];
-        y += buf[i * 3 + 1];
-        z += buf[i * 3 + 2];
-    }
-    offset[0] = x / bufferSize;
-    offset[1] = y / bufferSize;
-    offset[2] = z / bufferSize;
-}
 
 const int RETENTION_MICRO_SECONDS = 60 * 10 * 1000000;
 int x = 0, y = 0, z = 0;
 
 // TODO: ここらへんの変数を整理する必要がある
-uint16_t rawData[bufferSize * 3];
+uint16_t rawData[rawBufferSize * 3];
 float offsettedData[bufferSize * 3];
 float filteredData[bufferSize * 3];
 float compositeData[bufferSize];
-float compositeSortedData[bufferSize];
+float compositeSortedData[samplingRate]; // これは1秒分
 
 unsigned long frame = 0;
 
@@ -105,6 +92,7 @@ void loop()
 {
     auto startTime = micros();
 
+    uint16_t bufferIndex = frame % rawBufferSize;
     uint16_t index = frame % bufferSize;
 
     // 計測した値を取得
@@ -116,10 +104,14 @@ void loop()
         if (v < 0 || v > 4096 || v == 1024 || v == 2048 || v == 3072)
             v = (uint16_t)offset[a];
         
-        auto localIndex = index * 3 + a;
-        rawData[localIndex] = v;
+        auto localIndex = bufferIndex * 3 + a;
 
-        // オフセット適用
+        sum[a] -= rawData[localIndex];
+        rawData[localIndex] = v;
+        sum[a] += rawData[localIndex];
+        offset[a] = sum[a] / (float)bufferSize;
+
+        // オフセット計算
         offsettedData[localIndex] = v - offset[a];
 
         // 直近の５フレーム分をフィルタに掛ける
@@ -133,10 +125,6 @@ void loop()
         filteredData[localIndex] = FILTER.execFilterAndPop(offsettedDataset, 5);
     }
 
-    // オフセット計算
-    if (!isOffsetted)
-        calcOffset(rawData);
-
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
         printNmea("XSACC,%.3f,%.3f,%.3f", filteredData[index * 3], filteredData[index * 3 + 1], filteredData[index * 3 + 2]);
     
@@ -148,8 +136,16 @@ void loop()
 
     if (isOffsetted && frame % (samplingRate / CALC_INTENSITY_RATE) == 0)
     {
-        memcpy(compositeSortedData, compositeData, sizeof(compositeData[0]) * bufferSize);
-        sortArray(compositeSortedData, bufferSize);
+        // 過去1秒だけ抜き出す
+        if (index < samplingRate) {
+            // XXC-----XX
+            memcpy(compositeSortedData, compositeData, sizeof(compositeData[0]) * (index + 1));
+            memcpy(compositeSortedData + index + 1, compositeData + bufferSize - samplingRate + (index + 1), sizeof(float) * (samplingRate - index - 1));
+        } else {
+            // -XXXXC----
+            memcpy(compositeSortedData, compositeData + index - samplingRate, sizeof(compositeData[0]) * samplingRate);
+        }
+        sortArray(compositeSortedData, samplingRate);
         auto gal = compositeSortedData[(int)(samplingRate * 0.7)];
         if (gal > 0)
         {
@@ -208,7 +204,7 @@ void loop()
     if (digitalRead(ADJUST_PIN) && isOffsetted)
     {
         isOffsetted = false;
-        offsetCounter = samplingRate * 5;
+        offsetCounter = samplingRate * 6;
         latestMaxTime = micros();
         maxIntensity = JMA_INT_0;
         printNmea("XSOFF,1");
