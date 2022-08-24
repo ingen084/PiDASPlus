@@ -71,7 +71,7 @@ int offsetCounter = bufferSize * 5;
 bool isOffsetted = false;
 
 // オフセットを計算する
-void calcOffset(int *buf)
+void calcOffset(uint16_t *buf)
 {
     float x = 0, y = 0, z = 0;
     for (int i = 0; i < bufferSize; i++)
@@ -117,17 +117,9 @@ void loop()
             v = (uint16_t)offset[a];
         
         auto localIndex = index * 3 + a;
+        rawData[localIndex] = v;
 
-        if (!isOffsetted) {
-            int sum = 0;
-            for (int i = 0; i < bufferSize; i++)
-            {
-                sum += rawData[i * 3 + a];
-            }
-            offset[a] = sum / bufferSize;
-        }
-
-        // オフセット計算
+        // オフセット適用
         offsettedData[localIndex] = v - offset[a];
 
         // 直近の５フレーム分をフィルタに掛ける
@@ -140,6 +132,10 @@ void loop()
         }
         filteredData[localIndex] = FILTER.execFilterAndPop(offsettedDataset, 5);
     }
+
+    // オフセット計算
+    if (!isOffsetted)
+        calcOffset(rawData);
 
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
         printNmea("XSACC,%.3f,%.3f,%.3f", filteredData[index * 3], filteredData[index * 3 + 1], filteredData[index * 3 + 2]);
