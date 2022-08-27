@@ -35,6 +35,11 @@ public:
         return t.val;
     }
 
+    float toGal(uint16_t val)
+    {
+        return val / 1024.0f * 980;
+    }
+
 private:
     SPISettings spiSettings;
     uint8_t csPin;
