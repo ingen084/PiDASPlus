@@ -1,5 +1,4 @@
-#if !defined(PIDAS_JMA_INTENSITY_HPP)
-#define PIDAS_JMA_INTENSITY_HPP
+#pragma once
 
 typedef enum
 {
@@ -17,27 +16,44 @@ typedef enum
 
 JmaIntensity getJmaIntensity(float rawIntensity)
 {
-    if (rawIntensity >= 6.5) {
+    if (rawIntensity >= 6.5)
+    {
         return JMA_INT_7;
-    } else if (rawIntensity >= 6.0) {
+    }
+    else if (rawIntensity >= 6.0)
+    {
         return JMA_INT_6_UPPER;
-    } else if (rawIntensity >= 5.5) {
+    }
+    else if (rawIntensity >= 5.5)
+    {
         return JMA_INT_6_LOWER;
-    } else if (rawIntensity >= 5.0) {
+    }
+    else if (rawIntensity >= 5.0)
+    {
         return JMA_INT_5_UPPER;
-    } else if (rawIntensity >= 4.5) {
+    }
+    else if (rawIntensity >= 4.5)
+    {
         return JMA_INT_5_LOWER;
-    } else if (rawIntensity >= 3.5) {
+    }
+    else if (rawIntensity >= 3.5)
+    {
         return JMA_INT_4;
-    } else if (rawIntensity >= 2.5) {
+    }
+    else if (rawIntensity >= 2.5)
+    {
         return JMA_INT_3;
-    } else if (rawIntensity >= 1.5) {
+    }
+    else if (rawIntensity >= 1.5)
+    {
         return JMA_INT_2;
-    } else if (rawIntensity >= 0.5) {
+    }
+    else if (rawIntensity >= 0.5)
+    {
         return JMA_INT_1;
-    } else {
+    }
+    else
+    {
         return JMA_INT_0;
     }
 }
-
-#endif

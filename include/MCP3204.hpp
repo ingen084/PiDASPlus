@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -26,12 +28,12 @@ public:
 
         digitalWrite(csPin, LOW);
         SPI.beginTransaction(spiSettings);
-        (void) SPI.transfer(0x06 | (ch >> 2));
+        (void)SPI.transfer(0x06 | (ch >> 2));
         t.msb = SPI.transfer(0xff & (ch << 6));
         t.lsb = SPI.transfer(0);
         SPI.endTransaction();
         digitalWrite(csPin, HIGH);
-        
+
         return t.val;
     }
 
