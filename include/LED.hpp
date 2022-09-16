@@ -1,9 +1,8 @@
+#pragma once
+
 #include <Arduino.h>
 
 #include "JmaIntensity.hpp"
-
-#if !defined(PIDAS_PLUS_LED_HPP)
-#define PIDAS_PLUS_LED_HPP
 
 #define PIDAS_PLUS_LED_PIN_OFFSET D6
 #define PIDAS_PLUS_LED_COUNT 10
@@ -81,5 +80,3 @@ public:
             off(i);
     }
 };
-
-#endif

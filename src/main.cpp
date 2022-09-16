@@ -67,7 +67,7 @@ void printNmea(const char *format, ...)
 }
 
 // 3-axis adjust value
-float offset[3];
+uint16_t offset[3];
 // Adujusting time( offset_counter / sampling rate = sec)
 int offsetCounter = bufferSize * 5;
 bool isOffsetted = false;
@@ -128,11 +128,7 @@ void loop()
 
     // オフセット計算
     if (!isOffsetted)
-    {
         calcOffset(rawData);
-        printNmea("XSOFF,0");
-        isOffsetted = true;
-    }
 
     float offsetSample[3];
     float newHPFilteredSample[3];
@@ -217,9 +213,14 @@ void loop()
     if (digitalRead(ADJUST_PIN) && isOffsetted)
     {
         isOffsetted = false;
-        offsetCounter = samplingRate * 5;
+        offsetCounter = samplingRate * 3;
         latestMaxTime = micros();
-        maxIntensity = JMA_INT_0;
         printNmea("XSOFF,1");
+    }
+    else if (!isOffsetted && offsetCounter-- <= 0)
+    {
+        maxIntensity = JMA_INT_0;
+        isOffsetted = true;
+        printNmea("XSOFF,0");
     }
 }
