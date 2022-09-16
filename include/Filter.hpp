@@ -123,6 +123,16 @@ public:
         }
     }
 
+    void reset()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            hpFilters[i].reset();
+            for (int j = 0; j < 6; j++)
+                filters[j][i].reset();
+        }
+    }
+
     void filterForShindo(float *newSample)
     {
         for (int i = 0; i < 3; i++)

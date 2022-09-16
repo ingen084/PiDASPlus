@@ -16,12 +16,20 @@ public:
     {
         /* memory allocation for H and delay values */
         dlyX = new float[coefBLen];
-        dlyY = new float[coefBLen];
+        dlyY = new float[coefALen];
         /* init parameters */
         this->coefBLen = coefBLen;
         this->coefALen = coefALen;
         this->coefsB = coefsB;
         this->coefsA = coefsA;
+        for (int i = 0; i < coefBLen; i++)
+            dlyX[i] = 0.0;
+        for (int j = 0; j < coefALen; j++)
+            dlyY[0] = 0.0;
+    }
+
+    void reset()
+    {
         for (int i = 0; i < coefBLen; i++)
             dlyX[i] = 0.0;
         for (int j = 0; j < coefALen; j++)
