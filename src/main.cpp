@@ -43,10 +43,11 @@ void printNmea(const char *format, ...)
     va_list arg;
     va_start(arg, format);
     char temp[64];
-    char* buffer = temp;
+    char *buffer = temp;
     size_t len = vsnprintf(temp, sizeof(temp), format, arg);
     va_end(arg);
-    if (len > sizeof(temp) - 1) {
+    if (len > sizeof(temp) - 1)
+    {
         buffer = new char[len + 1];
         if (!buffer)
             return;
@@ -58,7 +59,8 @@ void printNmea(const char *format, ...)
     for (int i = 0; buffer[i]; i++)
         checkSum ^= (byte)buffer[i];
     Serial.printf("$%s*%02X\r\n", buffer, checkSum);
-    if (buffer != temp) {
+    if (buffer != temp)
+    {
         delete[] buffer;
     }
     Serial.flush();
@@ -73,27 +75,32 @@ bool isOffsetted = false;
 // オフセットを計算する
 void calcOffset(uint16_t *buf)
 {
-    float x = 0, y = 0, z = 0;
-    for (int i = 0; i < bufferSize; i++)
+    offset[0] = buf[0];
+    offset[1] = buf[1];
+    offset[2] = buf[2];
+}
+
+float computePGA(float *HPFilteredData)
+{
+    float pga = 0;
+    float acc = 0;
+    for (int i = 0; i < samplingRate; i++)
     {
-        x += buf[i * 3 + 0];
-        y += buf[i * 3 + 1];
-        z += buf[i * 3 + 2];
+        acc = sqrt(HPFilteredData[i] * HPFilteredData[i] + HPFilteredData[i + 1] * HPFilteredData[i + 1] + HPFilteredData[i + 2] * HPFilteredData[i + 2]);
+        if (acc > pga)
+            pga = acc;
     }
-    offset[0] = x / bufferSize;
-    offset[1] = y / bufferSize;
-    offset[2] = z / bufferSize;
+
+    return pga;
 }
 
 const int RETENTION_MICRO_SECONDS = 60 * 10 * 1000000;
 int x = 0, y = 0, z = 0;
 
-// TODO: ここらへんの変数を整理する必要がある
-uint16_t rawData[bufferSize * 3];
-float offsettedData[bufferSize * 3];
-float filteredData[bufferSize * 3];
+uint16_t rawData[3];
 float compositeData[bufferSize];
 float compositeSortedData[bufferSize];
+float HPFilteredData[bufferSize * 3];
 
 unsigned long frame = 0;
 
@@ -108,49 +115,61 @@ void loop()
     uint16_t index = frame % bufferSize;
 
     // 計測した値を取得
-    for (auto a = 0; a < 3; a++) {
-        // 値を拾ってくる
+    for (auto a = 0; a < 3; a++)
+    {
         uint16_t v = ADC.read(a);
 
         // 極値を弾く
         if (v < 0 || v > 4096 || v == 1024 || v == 2048 || v == 3072)
             v = (uint16_t)offset[a];
-        
-        auto localIndex = index * 3 + a;
-        rawData[localIndex] = v;
 
-        // オフセット適用
-        offsettedData[localIndex] = v - offset[a];
-
-        // 直近の５フレーム分をフィルタに掛ける
-        float offsettedDataset[5];
-        for (int i = 0; i < 5; i++)
-        {
-            auto fIndex = (frame - 5 + i + 1) % bufferSize;
-            // G to Gal.
-            offsettedDataset[i] = offsettedData[fIndex * 3 + a] / 1024.0f * 980;
-        }
-        filteredData[localIndex] = FILTER.execFilterAndPop(offsettedDataset, 5);
+        rawData[a] = v;
     }
 
     // オフセット計算
     if (!isOffsetted)
+    {
         calcOffset(rawData);
+        printNmea("XSOFF,0");
+        isOffsetted = true;
+    }
+
+    float offsetSample[3];
+    float newHPFilteredSample[3];
+    float filteredDataSample[3];
+
+    for (auto i = 0; i < 3; i++)
+    {
+        offsetSample[i] = (rawData[i] - offset[i]) / 1024.0f * 981;
+        newHPFilteredSample[i] = offsetSample[i];
+        filteredDataSample[i] = offsetSample[i];
+    }
+
+    FILTER.filterHP(newHPFilteredSample);
+    FILTER.filterForShindo(filteredDataSample);
+
+    for (int i = 0; i < 3; i++)
+    {
+        HPFilteredData[index * 3 + i] = newHPFilteredSample[i];
+    }
 
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
-        printNmea("XSACC,%.3f,%.3f,%.3f", filteredData[index * 3], filteredData[index * 3 + 1], filteredData[index * 3 + 2]);
-    
+        printNmea("XSACC,%.3f,%.3f,%.3f", HPFilteredData[index * 3], HPFilteredData[index * 3 + 1], HPFilteredData[index * 3 + 2]);
+
     // 3軸合成
     compositeData[index] = sqrt(
-        filteredData[index * 3 + 0] * filteredData[index * 3 + 0] +
-        filteredData[index * 3 + 1] * filteredData[index * 3 + 1] +
-        filteredData[index * 3 + 2] * filteredData[index * 3 + 2]);
+        filteredDataSample[0] * filteredDataSample[0] +
+        filteredDataSample[1] * filteredDataSample[1] +
+        filteredDataSample[2] * filteredDataSample[2]);
 
     if (isOffsetted && frame % (samplingRate / CALC_INTENSITY_RATE) == 0)
     {
         memcpy(compositeSortedData, compositeData, sizeof(compositeData[0]) * bufferSize);
         sortArray(compositeSortedData, bufferSize);
         auto gal = compositeSortedData[(int)(samplingRate * 0.7)];
+        float pga = computePGA(HPFilteredData);
+        printNmea("XSPGA,%.3f", pga);
+
         if (gal > 0)
         {
             auto rawInt = round((2.0f * log10(gal) + 0.94f) * 10.0f) / 10.0f;
@@ -173,7 +192,7 @@ void loop()
 
     if (isOffsetted && frame % (samplingRate / 4) == 0 && latestIntensity < maxIntensity)
         LED.toggle(maxIntensity);
-    
+
     if (!isOffsetted)
     {
         auto v = (JmaIntensity)(offsetCounter * 100 / (samplingRate * 5) % 10);
@@ -194,16 +213,6 @@ void loop()
     // {
     //     printNmea("XTIME,%d,%d", workTime, sleepTime);
     // }
-
-    if (offsetCounter <= 0 && !isOffsetted)
-    {
-        isOffsetted = true;
-        printNmea("XSOFF,0");
-    }
-    else if (offsetCounter > 0)
-    {
-        offsetCounter -= 1;
-    }
 
     if (digitalRead(ADJUST_PIN) && isOffsetted)
     {
