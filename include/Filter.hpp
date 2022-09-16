@@ -1,9 +1,6 @@
-#include <Arduino.h>
-extern "C" {
-#include "simpleDSP_iir.h"
-}
-#if !defined(PIDAS_FILTER_HPP)
-#define PIDAS_FILTER_HPP
+#pragma once
+
+#include "SimpleIIR.hpp"
 
 /*
 作成者 : François LN
@@ -14,15 +11,15 @@ private:
     int fs;
     float coefA[6][3];
     float coefB[6][3];
-    IIR filters[6][3];
-    IIR hpfilters[3];
+    SimpleIir filters[6][3];
+    SimpleIir hpFilters[3];
     float outputSample[3];
     const float f0 = 0.45, f1 = 7.0, f2 = 0.5, f3 = 12.0, f4 = 20.0, f5 = 30.0, h2a = 1.0, h2b = 0.75, h3 = 0.9, h4 = 0.6, h5 = 0.6, g = 1.262, pi = PI;
-    
-	// 2次バターワースハイパスフィルター（カットオフ0.05Hz）  --- 係数は、100Hz のサンプル周波数に対してのみ有効です
-	float hpb[3] = {0.997781024102941, -1.995562048205882 , 0.997781024102941};
-    float hpa[3] = {1,-1.995557124345789,0.995566972065975};
-    
+
+    // 2次バターワースハイパスフィルター（カットオフ0.05Hz）  --- 係数は、100Hz のサンプル周波数に対してのみ有効です
+    float hpb[3] = {0.997781024102941, -1.995562048205882, 0.997781024102941};
+    float hpa[3] = {1, -1.995557124345789, 0.995566972065975};
+
     void initFilterCoefTypeA14(float *coefA, float *coefB, float hc, float fc)
     {
         // A14
@@ -33,23 +30,22 @@ private:
         coefB[0] = omega_c * omega_c;
         coefB[1] = 10 * (omega_c * omega_c);
         coefB[2] = omega_c * omega_c;
-    }    
+    }
     void initFilter01Coef(float *coefA, float *coefB)
     {
-         // A11
+        // A11
         float fa1 = f0;
         float fa2 = f1;
-        
+
         float omega_a1 = 2 * pi * fa1;
         float omega_a2 = 2 * pi * fa2;
-        
+
         coefA[0] = 8 * (fs * fs) + (4 * omega_a1 + 2 * omega_a2) * fs + omega_a1 * omega_a2;
         coefA[1] = 2 * omega_a1 * omega_a2 - 16 * (fs * fs);
         coefA[2] = 8 * (fs * fs) - (4 * omega_a1 + 2 * omega_a2) * fs + omega_a1 * omega_a2;
         coefB[0] = 4 * (fs * fs) + 2 * omega_a2 * fs;
         coefB[1] = -8 * (fs * fs);
         coefB[2] = 4 * (fs * fs) - 2 * omega_a2 * fs;
-
     }
     void initFilter02Coef(float *coefA, float *coefB)
     {
@@ -77,7 +73,6 @@ private:
         coefB[0] = 12 * (fs * fs) + (12 * hb1 * omega_b) * fs + (omega_b * omega_b);
         coefB[1] = 10 * (omega_b * omega_b) - 24 * (fs * fs);
         coefB[2] = 12 * (fs * fs) - (12 * hb1 * omega_b) * fs + (omega_b * omega_b);
-        
     }
     void initFilter04Coef(float *coefA, float *coefB)
     {
@@ -85,29 +80,30 @@ private:
         float hc = h3;
         float fc = f3;
 
-        initFilterCoefTypeA14(coefA,coefB, hc, fc);
+        initFilterCoefTypeA14(coefA, coefB, hc, fc);
     }
     void initFilter05Coef(float *coefA, float *coefB)
     {
         float hc = h4;
         float fc = f4;
-        
-        initFilterCoefTypeA14(coefA,coefB, hc, fc);
+
+        initFilterCoefTypeA14(coefA, coefB, hc, fc);
     }
     void initFilter06Coef(float *coefA, float *coefB)
     {
         float hc = h5;
         float fc = f5;
-        
-        initFilterCoefTypeA14(coefA,coefB, hc, fc);
+
+        initFilterCoefTypeA14(coefA, coefB, hc, fc);
     }
     void initHPCoef(float *coefA, float *coefB)
     {
         float hc = h5;
         float fc = f5;
-        
-        initFilterCoefTypeA14(coefA,coefB, hc, fc);
+
+        initFilterCoefTypeA14(coefA, coefB, hc, fc);
     }
+
 public:
     Filter(int samplingRate)
     {
@@ -119,33 +115,22 @@ public:
         initFilter05Coef(coefA[4], coefB[4]);
         initFilter06Coef(coefA[5], coefB[5]);
 
-        for (int i = 0 ; i < 3 ; i++)
+        for (int i = 0; i < 3; i++)
         {
-             iirInit(&hpfilters[i], 3, hpb, 3, hpa);
-			 for (int j = 0 ; j < 6 ; j++)
-			 {
-				 iirInit(&filters[j][i], 3, coefB[j], 3, coefA[j]);
-			 }
+            hpFilters[i] = SimpleIir(3, hpb, 3, hpa);
+            for (int j = 0; j < 6; j++)
+                filters[j][i] = SimpleIir(3, coefB[j], 3, coefA[j]);
         }
     }
 
     void filterForShindo(float *newSample)
     {
-        for (int i = 0 ; i < 3 ; i++)
-        {
-           newSample[i] = iirFilt(&filters[5][i],iirFilt(&filters[4][i],iirFilt(&filters[3][i],iirFilt(&filters[2][i],iirFilt(&filters[1][i],iirFilt(&filters[0][i], newSample[i])))))) * g;
-        }
- 
+        for (int i = 0; i < 3; i++)
+            newSample[i] = filters[5][i].filter(filters[4][i].filter(filters[3][i].filter(filters[2][i].filter(filters[1][i].filter(filters[0][i].filter(newSample[i])))))) * g;
     }
     void filterHP(float *newSample)
     {
-		
-        for (int i = 0 ; i < 3 ; i++)
-        {
-           newSample[i] = iirFilt(&hpfilters[i], newSample[i]);
-        }
-		
+        for (int i = 0; i < 3; i++)
+            newSample[i] = hpFilters[i].filter(newSample[i]);
     }
 };
-
-#endif
