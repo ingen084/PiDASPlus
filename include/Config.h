@@ -33,4 +33,4 @@
 // ADCの返り値に使用する型
 #define ADC_RESULT_TYPE uint16_t
 // ADCの返り値を gal に変換する式
-#define ADC_RAW_TO_GAL(i) (i) / 1024.0f * 981
+#define ADC_RAW_TO_GAL(i) (i) / 1024.0f * 980.665f
