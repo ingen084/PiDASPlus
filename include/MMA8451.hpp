@@ -5,11 +5,11 @@
 
 class MMA8451
 {
-private:
     Adafruit_MMA8451 mma;
 
 public:
-    MMA8451(){
+    MMA8451()
+    {
         mma = Adafruit_MMA8451();
     };
 
@@ -35,6 +35,6 @@ public:
     }
 
     ~MMA8451(){
-        
+
     };
 };

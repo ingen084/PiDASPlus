@@ -136,22 +136,11 @@ public:
     void filterForShindo(float *newSample)
     {
         for (int i = 0; i < 3; i++)
-            newSample[i] = filters[5][i].filter(
-                               filters[4][i].filter(
-                                   filters[3][i].filter(
-                                       filters[2][i].filter(
-                                           filters[1][i].filter(
-                                               filters[0][i].filter(newSample[i])))))) *
-                           g;
+            newSample[i] = filters[5][i].filter(filters[4][i].filter(filters[3][i].filter(filters[2][i].filter(filters[1][i].filter(filters[0][i].filter(newSample[i])))))) * g;
     }
     void filterHP(float *newSample)
     {
         for (int i = 0; i < 3; i++)
-        {
             newSample[i] = hpFilters[i].filter(newSample[i]);
-#ifdef DEBUG
-            Serial.printf("newSamle[%d]:%f", i, newSample[i]);
-#endif
-        }
     }
 };
