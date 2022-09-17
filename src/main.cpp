@@ -179,7 +179,7 @@ void loop()
     auto workTime = micros() - startTime;
     auto sleepTime = 1000000 / samplingRate - workTime;
     if (sleepTime > 0)
-        sleep_us(sleepTime);
+        delayMicroseconds(sleepTime);
 
     // if (frame % samplingRate == 0)
     // {
