@@ -25,7 +25,12 @@ public:
         for (int i = 0; i < coefBLen; i++)
             dlyX[i] = 0.0;
         for (int j = 0; j < coefALen; j++)
-            dlyY[0] = 0.0;
+            dlyY[j] = 0.0;
+    }
+    ~SimpleIir()
+    {
+        delete dlyX;
+        delete dlyY;
     }
 
     void reset()
@@ -33,7 +38,7 @@ public:
         for (int i = 0; i < coefBLen; i++)
             dlyX[i] = 0.0;
         for (int j = 0; j < coefALen; j++)
-            dlyY[0] = 0.0;
+            dlyY[j] = 0.0;
     }
 
     float filter(float input)
