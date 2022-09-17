@@ -2,9 +2,9 @@
 
 #include "SimpleIIR.hpp"
 
-/*
-作成者 : François LN
-*/
+/**
+ * @author François LN
+ */
 class Filter
 {
 private:
