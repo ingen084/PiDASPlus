@@ -4,8 +4,8 @@
 
 #include "JmaIntensity.hpp"
 #include "LED.hpp"
-#include "MCP3204.hpp"
 #include "Filter.hpp"
+#include "Config.h"
 
 // 震度を計算する頻度(1 ~ 100/秒)
 const int CALC_INTENSITY_RATE = 10;
@@ -13,8 +13,7 @@ const int CALC_INTENSITY_RATE = 10;
 const int ACC_REPORT_RATE = 100;
 
 Led LED = Led();
-MCP3204 ADC = MCP3204(SPISettings(115200, MSBFIRST, SPI_MODE0), D21);
-auto ADJUST_PIN = D16;
+ADC_CLASS ADC = ADC_CONSTRUCTOR;
 
 const int samplingRate = 100;
 const int bufferSize = samplingRate;
@@ -23,16 +22,13 @@ Filter FILTER = Filter(samplingRate);
 
 void setup()
 {
+#ifndef DISABLE_ADJUST_PIN
     pinMode(ADJUST_PIN, INPUT_PULLDOWN);
+#endif
 
     Serial.begin(115200);
 
-    // TODO: これクラスの中に持っていったほうが良さそう
-    SPI.setRX(D20);
-    SPI.setCS(D21);
-    SPI.setSCK(D18);
-    SPI.setTX(D19);
-    SPI.begin();
+    ADC.begin();
 
     LED.wakeup();
 }
@@ -67,18 +63,10 @@ void printNmea(const char *format, ...)
 }
 
 // 3-axis adjust value
-uint16_t offset[3];
+ADC_RESULT_TYPE offset[3];
 // Adujusting time( offset_counter / sampling rate = sec)
 int offsetCounter = bufferSize * 1;
 bool isOffsetted = false;
-
-// オフセットを計算する
-void calcOffset(uint16_t *buf)
-{
-    offset[0] = buf[0];
-    offset[1] = buf[1];
-    offset[2] = buf[2];
-}
 
 float computePGA(float *HPFilteredData)
 {
@@ -97,7 +85,7 @@ float computePGA(float *HPFilteredData)
 const int RETENTION_MICRO_SECONDS = 60 * 10 * 1000000;
 int x = 0, y = 0, z = 0;
 
-uint16_t rawData[3];
+ADC_RESULT_TYPE rawData[3];
 float compositeData[bufferSize];
 float compositeSortedData[bufferSize];
 float HPFilteredData[bufferSize * 3];
@@ -114,40 +102,29 @@ void loop()
 
     uint16_t index = frame % bufferSize;
 
-    // 計測した値を取得
-    for (auto a = 0; a < 3; a++)
-    {
-        uint16_t v = ADC.read(a);
-
-        // 極値を弾く
-        if (v < 0 || v > 4096 || v == 1024 || v == 2048 || v == 3072)
-            v = (uint16_t)offset[a];
-
-        rawData[a] = v;
-    }
-
-    // オフセット計算
-    if (!isOffsetted)
-        calcOffset(rawData);
-
     float offsetSample[3];
     float newHPFilteredSample[3];
     float filteredDataSample[3];
 
-    for (auto i = 0; i < 3; i++)
+    // 計測した値を取得
+    for (auto a = 0; a < 3; a++)
     {
-        offsetSample[i] = (rawData[i] - offset[i]) / 1024.0f * 981;
-        newHPFilteredSample[i] = offsetSample[i];
-        filteredDataSample[i] = offsetSample[i];
+        rawData[a] = ADC.read(a, offset[a]);
+
+        // オフセット計算
+        if (!isOffsetted)
+            offset[a] = rawData[a];
+
+        offsetSample[a] = ADC_RAW_TO_GAL(rawData[a] - offset[a]);
+        newHPFilteredSample[a] = offsetSample[a];
+        filteredDataSample[a] = offsetSample[a];
     }
 
     FILTER.filterHP(newHPFilteredSample);
     FILTER.filterForShindo(filteredDataSample);
 
     for (int i = 0; i < 3; i++)
-    {
         HPFilteredData[index * 3 + i] = newHPFilteredSample[i];
-    }
 
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
         printNmea("XSACC,%.3f,%.3f,%.3f", HPFilteredData[index * 3], HPFilteredData[index * 3 + 1], HPFilteredData[index * 3 + 2]);
@@ -210,6 +187,7 @@ void loop()
     //     printNmea("XTIME,%d,%d", workTime, sleepTime);
     // }
 
+#ifndef DISABLE_ADJUST_PIN
     if (digitalRead(ADJUST_PIN) && isOffsetted)
     {
         isOffsetted = false;
@@ -217,7 +195,9 @@ void loop()
         latestMaxTime = micros();
         printNmea("XSOFF,1");
     }
-    else if (!isOffsetted && offsetCounter-- <= 0)
+    else
+#endif
+    if (!isOffsetted && offsetCounter-- <= 0)
     {
         maxIntensity = JMA_INT_0;
         FILTER.reset();

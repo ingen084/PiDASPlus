@@ -5,6 +5,8 @@
 
 class MCP3204
 {
+    SPISettings spiSettings;
+    uint8_t csPin;
 public:
     MCP3204(SPISettings spiSettings, uint8_t csPin)
     {
@@ -14,7 +16,15 @@ public:
         digitalWrite(csPin, HIGH);
     }
 
-    uint16_t read(uint8_t ch)
+    void begin() {
+        SPI.setRX(D20);
+        SPI.setCS(D21);
+        SPI.setSCK(D18);
+        SPI.setTX(D19);
+        SPI.begin();
+    }
+
+    uint16_t read(uint8_t ch, uint16_t def)
     {
         union
         {
@@ -34,10 +44,10 @@ public:
         SPI.endTransaction();
         digitalWrite(csPin, HIGH);
 
+        // 極値の場合はデフォルトの値を返す
+        if (t.val < 0 || t.val > 4096 || t.val == 1024 || t.val == 2048 || t.val == 3072)
+            return def;
+
         return t.val;
     }
-
-private:
-    SPISettings spiSettings;
-    uint8_t csPin;
 };

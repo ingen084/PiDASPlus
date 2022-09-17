@@ -2,9 +2,9 @@
 
 #include <Arduino.h>
 
+#include "Config.h"
 #include "JmaIntensity.hpp"
 
-#define PIDAS_PLUS_LED_PIN_OFFSET D6
 #define PIDAS_PLUS_LED_COUNT 10
 #define PIDAS_PLUS_LED_CHECK_COUNT(i)           \
     if ((i) < 0 || (i) >= PIDAS_PLUS_LED_COUNT) \
@@ -20,23 +20,29 @@ private:
 
     void on(int led)
     {
+#ifndef DISABLE_INTENSITY_LED
         PIDAS_PLUS_LED_CHECK_COUNT(led);
-        digitalWrite(PIDAS_PLUS_LED_PIN_OFFSET + led, HIGH);
+        digitalWrite(INTENSITY_LED_PIN_OFFSET + led, HIGH);
         ledState[led] = true;
+#endif
     }
 
     void off(int led)
     {
+#ifndef DISABLE_INTENSITY_LED
         PIDAS_PLUS_LED_CHECK_COUNT(led);
-        digitalWrite(PIDAS_PLUS_LED_PIN_OFFSET + led, LOW);
+        digitalWrite(INTENSITY_LED_PIN_OFFSET + led, LOW);
         ledState[led] = false;
+#endif
     }
 
 public:
     Led()
     {
+#ifndef DISABLE_INTENSITY_LED
         for (auto i = 0; i < PIDAS_PLUS_LED_COUNT; i++)
-            pinMode(PIDAS_PLUS_LED_PIN_OFFSET + i, OUTPUT);
+            pinMode(INTENSITY_LED_PIN_OFFSET + i, OUTPUT);
+#endif
     }
 
     /**
@@ -45,11 +51,13 @@ public:
      */
     void wakeup()
     {
+#ifndef DISABLE_INTENSITY_LED
         for (auto i = 0; i < PIDAS_PLUS_LED_COUNT; i++)
             on(i);
         sleep_ms(1000);
         for (auto i = 0; i < PIDAS_PLUS_LED_COUNT; i++)
             off(i);
+#endif
     }
 
     void blinkScale(JmaIntensity scale, JmaIntensity max)
