@@ -25,12 +25,12 @@ public:
         for (int i = 0; i < coefBLen; i++)
             dlyX[i] = 0.0;
         for (int j = 0; j < coefALen; j++)
-        {
             dlyY[j] = 0.0;
-#ifdef DEBUG
-            Serial.printf("dlyY:%f \r\n", dlyY);
-#endif
-        }
+    }
+    ~SimpleIir()
+    {
+        delete dlyX;
+        delete dlyY;
     }
 
     void reset()
