@@ -33,8 +33,4 @@ public:
         data[1] = mma.y_g * 100.0;
         data[2] = mma.z_g * 100.0;
     }
-
-    ~MMA8451(){
-
-    };
 };
