@@ -7,24 +7,8 @@ class MCP3204
 {
     SPISettings spiSettings;
     uint8_t csPin;
-public:
-    MCP3204(SPISettings spiSettings, uint8_t csPin)
-    {
-        this->spiSettings = spiSettings;
-        this->csPin = csPin;
-        pinMode(csPin, OUTPUT);
-        digitalWrite(csPin, HIGH);
-    }
 
-    void begin() {
-        SPI.setRX(D20);
-        SPI.setCS(D21);
-        SPI.setSCK(D18);
-        SPI.setTX(D19);
-        SPI.begin();
-    }
-
-    uint16_t read(uint8_t ch, uint16_t def)
+    uint16_t readChannel(const uint8_t ch, const uint16_t def)
     {
         union
         {
@@ -49,5 +33,27 @@ public:
             return def;
 
         return t.val;
+    }
+public:
+    MCP3204(SPISettings spiSettings, uint8_t csPin)
+    {
+        this->spiSettings = spiSettings;
+        this->csPin = csPin;
+        pinMode(csPin, OUTPUT);
+        digitalWrite(csPin, HIGH);
+    }
+
+    void begin() {
+        SPI.setRX(D20);
+        SPI.setCS(D21);
+        SPI.setSCK(D18);
+        SPI.setTX(D19);
+        SPI.begin();
+    }
+
+    void read(uint16_t* data, const uint16_t* def)
+    {
+        for (auto a = 0; a < 3; a++)
+            data[a] = readChannel(a, def[a]);
     }
 };

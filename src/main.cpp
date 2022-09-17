@@ -106,11 +106,10 @@ void loop()
     float newHPFilteredSample[3];
     float filteredDataSample[3];
 
+    ADC.read(rawData, offset);
     // 計測した値を取得
     for (auto a = 0; a < 3; a++)
     {
-        rawData[a] = ADC.read(a, offset[a]);
-
         // オフセット計算
         if (!isOffsetted)
             offset[a] = rawData[a];
