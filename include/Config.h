@@ -39,11 +39,11 @@
 
 #ifdef USE_MMA8451
 #include "MMA8451.hpp"
-// ADCクラス
+// 加速度計クラス
 #define ADC_CLASS MMA8451
-// ADCクラスのコンストラクタ
+// 加速度計クラスのコンストラクタ
 #define ADC_CONSTRUCTOR MMA8451()
-// ADCの返り値に使用する型
+// 加速度の返り値に使用する型
 #define ADC_RESULT_TYPE float
 // ADCの返り値を gal に変換する式
 #define ADC_RAW_TO_GAL(i) (i)
