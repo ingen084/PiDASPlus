@@ -123,7 +123,7 @@ void loop()
     FILTER.filterHP(hpFilteredSample);
 
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
-        printNmea("XSACC,%.3f,%.3f,%.3f", offsetSample[0] - hpFilteredSample[0], offsetSample[1] - hpFilteredSample[1], offsetSample[2] - hpFilteredSample[2]);
+        printNmea("XSACC,%.3f,%.3f,%.3f", hpFilteredSample[0], hpFilteredSample[1], hpFilteredSample[2]);
 
     for (int i = 0; i < 3; i++)
     {

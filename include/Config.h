@@ -35,7 +35,7 @@
 #define ADC_RESULT_TYPE uint16_t
 // ADCの返り値を gal に変換する式
 // (測定値) / ADCのレンジ / フルレンジの加速度 * 1G
-#define ADC_RAW_TO_GAL(i) (i) / 4095.0f / 5.0f * 980.665f
+#define ADC_RAW_TO_GAL(i) (i) / (4095.0f / 5.0f) * 980.665f
 #endif
 
 #ifdef USE_MMA8451
