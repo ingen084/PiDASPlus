@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.embeddedhtml": "html",
         "bit": "cpp",
         "array": "cpp",
         "deque": "cpp",
@@ -13,6 +14,7 @@
         "*.tcc": "cpp",
         "memory": "cpp",
         "random": "cpp",
-        "cstddef": "cpp"
+        "cstddef": "cpp",
+        "optional": "cpp"
     }
 }

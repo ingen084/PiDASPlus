@@ -133,12 +133,12 @@ public:
         }
     }
 
-    void filterForShindo(float *newSample)
+    void filterForShindo(float (&newSample)[3])
     {
         for (int i = 0; i < 3; i++)
             newSample[i] = filters[5][i].filter(filters[4][i].filter(filters[3][i].filter(filters[2][i].filter(filters[1][i].filter(filters[0][i].filter(newSample[i])))))) * g;
     }
-    void filterHP(float *newSample)
+    void filterHP(float (&newSample)[3])
     {
         for (int i = 0; i < 3; i++)
             newSample[i] = hpFilters[i].filter(newSample[i]);
