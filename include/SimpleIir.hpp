@@ -27,11 +27,6 @@ public:
         for (int j = 0; j < coefALen; j++)
             dlyY[j] = 0.0;
     }
-    ~SimpleIir()
-    {
-        delete dlyX;
-        delete dlyY;
-    }
 
     void reset()
     {

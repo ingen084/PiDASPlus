@@ -16,7 +16,7 @@ Led LED = Led();
 ADC_CLASS ADC = ADC_CONSTRUCTOR;
 
 const int samplingRate = 100;
-const int bufferSize = samplingRate;
+const int bufferSize = samplingRate * 1;
 
 Filter FILTER = Filter(samplingRate);
 
@@ -65,16 +65,19 @@ void printNmea(const char *format, ...)
 // 3-axis adjust value
 ADC_RESULT_TYPE offset[3];
 // Adujusting time( offset_counter / sampling rate = sec)
-int offsetCounter = bufferSize * 1;
+int offsetCounter = samplingRate * 1;
 bool isOffsetted = false;
 
 float computePGA(float *HPFilteredData)
 {
     float pga = 0;
     float acc = 0;
-    for (int i = 0; i < samplingRate; i++)
+    for (int i = 0; i < samplingRate * 3; i += 3)
     {
-        acc = sqrt(HPFilteredData[i] * HPFilteredData[i] + HPFilteredData[i + 1] * HPFilteredData[i + 1] + HPFilteredData[i + 2] * HPFilteredData[i + 2]);
+        acc = sqrt(
+            HPFilteredData[i] * HPFilteredData[i] +
+            HPFilteredData[i + 1] * HPFilteredData[i + 1] +
+            HPFilteredData[i + 2] * HPFilteredData[i + 2]);
         if (acc > pga)
             pga = acc;
     }
@@ -83,7 +86,6 @@ float computePGA(float *HPFilteredData)
 }
 
 const int RETENTION_MICRO_SECONDS = 60 * 10 * 1000000;
-int x = 0, y = 0, z = 0;
 
 ADC_RESULT_TYPE rawData[3];
 float compositeData[bufferSize];
@@ -103,7 +105,7 @@ void loop()
     uint16_t index = frame % bufferSize;
 
     float offsetSample[3];
-    float newHPFilteredSample[3];
+    float hpFilteredSample[3];
     float filteredDataSample[3];
 
     ADC.read(rawData, offset);
@@ -112,21 +114,24 @@ void loop()
     {
         // オフセット計算
         if (!isOffsetted)
-            offset[a] = rawData[a];
+           offset[a] = rawData[a];
 
         offsetSample[a] = ADC_RAW_TO_GAL(rawData[a] - offset[a]);
-        newHPFilteredSample[a] = offsetSample[a];
-        filteredDataSample[a] = offsetSample[a];
+        hpFilteredSample[a] = offsetSample[a];
     }
 
-    FILTER.filterHP(newHPFilteredSample);
-    FILTER.filterForShindo(filteredDataSample);
-
-    for (int i = 0; i < 3; i++)
-        HPFilteredData[index * 3 + i] = newHPFilteredSample[i];
+    FILTER.filterHP(hpFilteredSample);
 
     if (isOffsetted && ACC_REPORT_RATE > 0 && frame % (samplingRate / ACC_REPORT_RATE) == 0)
-        printNmea("XSACC,%.3f,%.3f,%.3f", HPFilteredData[index * 3], HPFilteredData[index * 3 + 1], HPFilteredData[index * 3 + 2]);
+        printNmea("XSACC,%.3f,%.3f,%.3f", hpFilteredSample[0], hpFilteredSample[1], hpFilteredSample[2]);
+
+    for (int i = 0; i < 3; i++)
+    {
+        HPFilteredData[index * 3 + i] = hpFilteredSample[i];
+        filteredDataSample[i] = hpFilteredSample[i];
+    }
+
+    FILTER.filterForShindo(filteredDataSample);
 
     // 3軸合成
     compositeData[index] = sqrt(
