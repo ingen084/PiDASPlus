@@ -49,3 +49,15 @@
 // ADCの返り値を gal に変換する式
 #define ADC_RAW_TO_GAL(i) (i)
 #endif
+
+#ifdef USE_LSM6DSO
+#include "LSM6DSO.hpp"
+// 加速度計クラス
+#define ADC_CLASS LSM6DSO
+// 加速度計クラスのコンストラクタ
+#define ADC_CONSTRUCTOR LSM6DSO()
+// 加速度の返り値に使用する型
+#define ADC_RESULT_TYPE float
+// ADCの返り値を gal に変換する式
+#define ADC_RAW_TO_GAL(i) (i)
+#endif
