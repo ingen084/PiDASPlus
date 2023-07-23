@@ -26,7 +26,7 @@
  * 尚フィルタ特性の都合上、 100Hz 固定です
  */
 #ifdef USE_MCP3204
-#include "MCP3204.hpp"
+#include "accelerometer/MCP3204.hpp"
 // ADCクラス
 #define ADC_CLASS MCP3204
 // ADCクラスのコンストラクタ
@@ -39,7 +39,7 @@
 #endif
 
 #ifdef USE_MMA8451
-#include "MMA8451.hpp"
+#include "accelerometer/MMA8451.hpp"
 // 加速度計クラス
 #define ADC_CLASS MMA8451
 // 加速度計クラスのコンストラクタ
@@ -51,7 +51,7 @@
 #endif
 
 #ifdef USE_LSM6DSO
-#include "LSM6DSO.hpp"
+#include "accelerometer/LSM6DSO.hpp"
 // 加速度計クラス
 #define ADC_CLASS LSM6DSO
 // 加速度計クラスのコンストラクタ
