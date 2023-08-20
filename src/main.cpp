@@ -97,6 +97,7 @@ unsigned long frame = 0;
 unsigned long latestMaxTime;
 JmaIntensity latestIntensity;
 JmaIntensity maxIntensity;
+float rawIntensity;
 
 void loop()
 {
@@ -152,6 +153,7 @@ void loop()
             auto rawInt = round((2.0f * log10(gal) + 0.94f) * 10.0f) / 10.0f;
             printNmea("XSINT,%.3f,%.2f", gal, rawInt);
             latestIntensity = getJmaIntensity(rawInt);
+            rawIntensity = rawInt;
 
             if (micros() - latestMaxTime > RETENTION_MICRO_SECONDS || maxIntensity <= latestIntensity)
             {
@@ -209,3 +211,19 @@ void loop()
         printNmea("XSOFF,0");
     }
 }
+
+#ifdef USE_SSD1306_DISPLAY
+OLED_CLASS OLED = OLED_CONSTRUCTOR;
+
+void setup1()
+{
+    OLED.begin();
+    OLED.wakeup();
+    delay(3 * 1000);
+}
+
+void loop1()
+{
+    OLED.updateIntensity(latestIntensity, rawIntensity);
+}
+#endif
