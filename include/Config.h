@@ -61,3 +61,11 @@
 // ADCの返り値を gal に変換する式
 #define ADC_RAW_TO_GAL(i) (i)
 #endif
+
+#ifdef USE_SSD1306_DISPLAY
+#include "display/SSD1306.hpp"
+// OLEDクラス
+#define OLED_CLASS SSD1306
+// OLEDクラスのコンストラクタ
+#define OLED_CONSTRUCTOR SSD1306()
+#endif
