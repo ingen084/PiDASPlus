@@ -26,7 +26,7 @@
  * 尚フィルタ特性の都合上、 100Hz 固定です
  */
 #ifdef USE_MCP3204
-#include "MCP3204.hpp"
+#include "accelerometer/MCP3204.hpp"
 // ADCクラス
 #define ADC_CLASS MCP3204
 // ADCクラスのコンストラクタ
@@ -39,7 +39,7 @@
 #endif
 
 #ifdef USE_MMA8451
-#include "MMA8451.hpp"
+#include "accelerometer/MMA8451.hpp"
 // 加速度計クラス
 #define ADC_CLASS MMA8451
 // 加速度計クラスのコンストラクタ
@@ -48,4 +48,24 @@
 #define ADC_RESULT_TYPE float
 // ADCの返り値を gal に変換する式
 #define ADC_RAW_TO_GAL(i) (i)
+#endif
+
+#ifdef USE_LSM6DSO
+#include "accelerometer/LSM6DSO.hpp"
+// 加速度計クラス
+#define ADC_CLASS LSM6DSO
+// 加速度計クラスのコンストラクタ
+#define ADC_CONSTRUCTOR LSM6DSO()
+// 加速度の返り値に使用する型
+#define ADC_RESULT_TYPE float
+// ADCの返り値を gal に変換する式
+#define ADC_RAW_TO_GAL(i) (i)
+#endif
+
+#ifdef USE_SSD1306_DISPLAY
+#include "display/SSD1306.hpp"
+// OLEDクラス
+#define OLED_CLASS SSD1306
+// OLEDクラスのコンストラクタ
+#define OLED_CONSTRUCTOR SSD1306()
 #endif

@@ -96,13 +96,6 @@ private:
 
         initFilterCoefTypeA14(coefA, coefB, hc, fc);
     }
-    void initHPCoef(float *coefA, float *coefB)
-    {
-        float hc = h5;
-        float fc = f5;
-
-        initFilterCoefTypeA14(coefA, coefB, hc, fc);
-    }
 
 public:
     Filter(int samplingRate)
