@@ -150,7 +150,8 @@ void loop()
 
         if (gal > 0)
         {
-            auto rawInt = round((2.0f * log10(gal) + 0.94f) * 10.0f) / 10.0f;
+            // 小数第3位を四捨五入して小数第2位を切り捨てる
+            auto rawInt = floor(round((2.0f * log10(gal) + 0.94f) * 100.0f) / 10.0f) / 10.0f;
             printNmea("XSINT,%.3f,%.2f", gal, rawInt);
             latestIntensity = getJmaIntensity(rawInt);
             rawIntensity = rawInt;
