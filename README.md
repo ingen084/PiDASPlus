@@ -1,3 +1,8 @@
+# 移行先について
+
+全面的にコードを見直し書き直した [ingen084/seismometer](https://github.com/ingen084/seismometer) に移行しました。  
+震度計算についても60秒ベースになりより正確になっていますのでそちらをご利用ください。
+
 # PiDASPlus
 
 [nrck](https://github.com/nrck)氏作成の [PiDAS](https://github.com/nrck/PiDAS) をC++に移植したものです。
